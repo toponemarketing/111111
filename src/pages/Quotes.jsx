@@ -14,7 +14,7 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react'
-import { useQuotes, useCustomers } from '../hooks/useSupabase'
+import { useQuotes, useCustomers, useJobs } from '../hooks/useSupabase'
 import QuoteModal from '../components/modals/QuoteModal'
 
 const Quotes = () => {
@@ -25,6 +25,7 @@ const Quotes = () => {
 
   const { quotes, loading, fetchQuotes, createQuote, updateQuote, deleteQuote } = useQuotes()
   const { customers, fetchCustomers } = useCustomers()
+  const { createJob } = useJobs()
 
   useEffect(() => {
     fetchQuotes()
@@ -66,6 +67,34 @@ const Quotes = () => {
     }
   }
 
+  const handleConvertToJob = async (quote) => {
+    if (confirm(`Convert quote ${quote.quote_number} to a job?`)) {
+      try {
+        // Create job from quote data
+        const jobData = {
+          customer_id: quote.customer_id,
+          service: quote.service,
+          description: quote.description,
+          amount: quote.amount,
+          status: 'Scheduled',
+          priority: 'Medium',
+          address: quote.customer?.address || '',
+          scheduled_date: new Date().toISOString().split('T')[0] // Today's date as default
+        }
+
+        await createJob(jobData)
+        
+        // Update quote status to indicate it was converted
+        await updateQuote(quote.id, { status: 'Accepted' })
+        
+        alert(`Quote ${quote.quote_number} successfully converted to job!`)
+      } catch (error) {
+        console.error('Error converting quote to job:', error)
+        alert('Error converting quote to job. Please try again.')
+      }
+    }
+  }
+
   const handleQuoteAction = async (action, quote) => {
     switch (action) {
       case 'view':
@@ -80,7 +109,7 @@ const Quotes = () => {
         }
         break
       case 'convert':
-        alert(`Converting quote ${quote.quote_number} to job`)
+        await handleConvertToJob(quote)
         break
       case 'duplicate':
         try {
@@ -255,7 +284,7 @@ const Quotes = () => {
                         Send
                       </button>
                     )}
-                    {quote.status === 'Accepted' && (
+                    {(quote.status === 'Accepted' || quote.status === 'Pending') && (
                       <button
                         onClick={() => handleQuoteAction('convert', quote)}
                         className="bg-primary-600 hover:bg-primary-700 text-white px-2 py-1 rounded text-xs flex items-center transition-colors"

@@ -46,6 +46,7 @@ const Jobs = () => {
         await deleteJob(job.id)
         alert('Job deleted successfully!')
       } catch (error) {
+        console.error('Error deleting job:', error)
         alert('Error deleting job. Please try again.')
       }
     }
@@ -61,7 +62,19 @@ const Jobs = () => {
         alert('Job created successfully!')
       }
     } catch (error) {
+      console.error('Error saving job:', error)
       throw error
+    }
+  }
+
+  const handleStatusChange = async (job, newStatus) => {
+    try {
+      console.log('Updating job status:', { jobId: job.id, oldStatus: job.status, newStatus })
+      await updateJob(job.id, { status: newStatus })
+      alert(`Job ${job.job_number} status updated to ${newStatus}`)
+    } catch (error) {
+      console.error('Error updating job status:', error)
+      alert('Error updating job status. Please try again.')
     }
   }
 
@@ -79,6 +92,10 @@ const Jobs = () => {
         return 'bg-primary-50 text-primary-700 border-primary-200'
       case 'Quote Sent':
         return 'bg-purple-50 text-purple-700 border-purple-200'
+      case 'Approved':
+        return 'bg-green-50 text-green-700 border-green-200'
+      case 'Cancelled':
+        return 'bg-gray-50 text-gray-700 border-gray-200'
       default:
         return 'bg-gray-50 text-gray-700 border-gray-200'
     }
@@ -95,6 +112,33 @@ const Jobs = () => {
       default:
         return 'bg-gray-50 text-gray-700'
     }
+  }
+
+  const getStatusActions = (job) => {
+    const actions = []
+    
+    switch (job.status) {
+      case 'Scheduled':
+        actions.push({ label: 'Start Job', status: 'In Progress', color: 'bg-blue-600 hover:bg-blue-700' })
+        actions.push({ label: 'Cancel', status: 'Cancelled', color: 'bg-red-600 hover:bg-red-700' })
+        break
+      case 'In Progress':
+        actions.push({ label: 'Complete', status: 'Completed', color: 'bg-green-600 hover:bg-green-700' })
+        actions.push({ label: 'Cancel', status: 'Cancelled', color: 'bg-red-600 hover:bg-red-700' })
+        break
+      case 'Approved':
+        actions.push({ label: 'Complete', status: 'Completed', color: 'bg-green-600 hover:bg-green-700' })
+        actions.push({ label: 'Start Job', status: 'In Progress', color: 'bg-blue-600 hover:bg-blue-700' })
+        break
+      case 'Quote Sent':
+        actions.push({ label: 'Approve', status: 'Approved', color: 'bg-green-600 hover:bg-green-700' })
+        actions.push({ label: 'Schedule', status: 'Scheduled', color: 'bg-blue-600 hover:bg-blue-700' })
+        break
+      default:
+        break
+    }
+    
+    return actions
   }
 
   const filteredJobs = jobs.filter(job => {
@@ -156,6 +200,8 @@ const Jobs = () => {
               <option value="In Progress">In Progress</option>
               <option value="Completed">Completed</option>
               <option value="Quote Sent">Quote Sent</option>
+              <option value="Approved">Approved</option>
+              <option value="Cancelled">Cancelled</option>
             </select>
           </div>
         </div>
@@ -212,8 +258,21 @@ const Jobs = () => {
                     </div>
                   </div>
 
-                  {/* Action buttons */}
-                  <div className="mt-4 flex space-x-2">
+                  {/* Status Action buttons */}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {getStatusActions(job).map((action, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleStatusChange(job, action.status)}
+                        className={`${action.color} text-white px-3 py-1 rounded text-xs flex items-center transition-colors`}
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Regular Action buttons */}
+                  <div className="mt-2 flex space-x-2">
                     <button
                       onClick={() => handleViewJob(job)}
                       className="btn-secondary text-xs flex items-center hover:bg-gray-100 transition-colors"

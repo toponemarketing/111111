@@ -46,6 +46,7 @@ const JobModal = ({ isOpen, onClose, onSave, job = null, customers = [] }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
+      console.log('Submitting job data:', formData)
       await onSave(formData)
       onClose()
     } catch (error) {
@@ -132,6 +133,7 @@ const JobModal = ({ isOpen, onClose, onSave, job = null, customers = [] }) => {
                 <option value="Completed">Completed</option>
                 <option value="Cancelled">Cancelled</option>
                 <option value="Quote Sent">Quote Sent</option>
+                <option value="Approved">Approved</option>
               </select>
             </div>
 
