@@ -238,4 +238,126 @@ const Settings = () => {
             <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
             <input type="password" className="mt-1 input-field" />
           </div>
-        
+          <button className="btn-primary">Update Password</button>
+        </div>
+      </div>
+      
+      <div>
+        <h4 className="text-sm font-medium text-gray-900 mb-3">Two-Factor Authentication</h4>
+        <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+          <div>
+            <p className="text-sm font-medium text-gray-900">Enable 2FA</p>
+            <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
+          </div>
+          <button className="btn-secondary">Enable</button>
+        </div>
+      </div>
+    </div>
+  )
+
+  const AppearanceSettings = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium text-gray-900">Appearance</h3>
+        <p className="text-sm text-gray-500">Customize how the application looks and feels.</p>
+      </div>
+      
+      <div>
+        <h4 className="text-sm font-medium text-gray-900 mb-3">Theme</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary-300">
+            <div className="w-full h-20 bg-white border border-gray-200 rounded mb-3"></div>
+            <p className="text-sm font-medium text-gray-900">Light</p>
+            <p className="text-xs text-gray-500">Clean and bright interface</p>
+          </div>
+          <div className="border border-primary-300 bg-primary-50 rounded-lg p-4 cursor-pointer">
+            <div className="w-full h-20 bg-gray-800 rounded mb-3"></div>
+            <p className="text-sm font-medium text-gray-900">Dark</p>
+            <p className="text-xs text-gray-500">Easy on the eyes</p>
+          </div>
+          <div className="border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary-300">
+            <div className="w-full h-20 bg-gradient-to-br from-white to-gray-800 rounded mb-3"></div>
+            <p className="text-sm font-medium text-gray-900">Auto</p>
+            <p className="text-xs text-gray-500">Matches system preference</p>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <h4 className="text-sm font-medium text-gray-900 mb-3">Color Scheme</h4>
+        <div className="flex space-x-3">
+          <div className="w-8 h-8 bg-blue-600 rounded-full cursor-pointer ring-2 ring-blue-600 ring-offset-2"></div>
+          <div className="w-8 h-8 bg-green-600 rounded-full cursor-pointer hover:ring-2 hover:ring-green-600 hover:ring-offset-2"></div>
+          <div className="w-8 h-8 bg-purple-600 rounded-full cursor-pointer hover:ring-2 hover:ring-purple-600 hover:ring-offset-2"></div>
+          <div className="w-8 h-8 bg-red-600 rounded-full cursor-pointer hover:ring-2 hover:ring-red-600 hover:ring-offset-2"></div>
+          <div className="w-8 h-8 bg-orange-600 rounded-full cursor-pointer hover:ring-2 hover:ring-orange-600 hover:ring-offset-2"></div>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'profile':
+        return <ProfileSettings />
+      case 'business':
+        return <BusinessSettings />
+      case 'notifications':
+        return <NotificationSettings />
+      case 'billing':
+        return <BillingSettings />
+      case 'security':
+        return <SecuritySettings />
+      case 'appearance':
+        return <AppearanceSettings />
+      default:
+        return <ProfileSettings />
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-600">Manage your account settings and preferences</p>
+      </div>
+
+      <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6" aria-label="Tabs">
+            {tabs.map((tab) => {
+              const Icon = tab.icon
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`${
+                    activeTab === tab.id
+                      ? 'border-primary-500 text-primary-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
+                >
+                  <Icon className="mr-2 h-4 w-4" />
+                  {tab.name}
+                </button>
+              )
+            })}
+          </nav>
+        </div>
+
+        <div className="p-6">
+          {renderTabContent()}
+        </div>
+
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+          <button className="btn-primary flex items-center">
+            <Save className="mr-2 h-4 w-4" />
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Settings
