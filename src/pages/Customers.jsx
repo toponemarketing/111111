@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   Plus, 
   Search, 
@@ -8,105 +8,81 @@ import {
   Mail,
   MapPin,
   User,
-  Building
+  Edit,
+  Trash2,
+  Eye
 } from 'lucide-react'
+import { useCustomers } from '../hooks/useSupabase'
+import CustomerModal from '../components/modals/CustomerModal'
 
 const Customers = () => {
   const [searchTerm, setSearchTerm] = useState('')
-  const [customerType, setCustomerType] = useState('all')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedCustomer, setSelectedCustomer] = useState(null)
 
-  const customers = [
-    {
-      id: 1,
-      name: 'John Smith',
-      type: 'Residential',
-      email: 'john.smith@email.com',
-      phone: '(555) 123-4567',
-      address: '123 Main St, Anytown, ST 12345',
-      totalJobs: 5,
-      totalSpent: '$1,250.00',
-      lastJobDate: '2024-01-15',
-      status: 'Active',
-    },
-    {
-      id: 2,
-      name: 'Sarah Johnson',
-      type: 'Residential',
-      email: 'sarah.johnson@email.com',
-      phone: '(555) 234-5678',
-      address: '456 Oak Ave, Anytown, ST 12345',
-      totalJobs: 3,
-      totalSpent: '$890.00',
-      lastJobDate: '2024-01-14',
-      status: 'Active',
-    },
-    {
-      id: 3,
-      name: 'ABC Corporation',
-      type: 'Commercial',
-      email: 'contact@abccorp.com',
-      phone: '(555) 345-6789',
-      address: '789 Business Blvd, Anytown, ST 12345',
-      totalJobs: 12,
-      totalSpent: '$5,600.00',
-      lastJobDate: '2024-01-16',
-      status: 'Active',
-    },
-    {
-      id: 4,
-      name: 'Mike Wilson',
-      type: 'Residential',
-      email: 'mike.wilson@email.com',
-      phone: '(555) 456-7890',
-      address: '321 Pine St, Anytown, ST 12345',
-      totalJobs: 2,
-      totalSpent: '$420.00',
-      lastJobDate: '2024-01-10',
-      status: 'Active',
-    },
-    {
-      id: 5,
-      name: 'Green Valley Apartments',
-      type: 'Commercial',
-      email: 'manager@greenvalley.com',
-      phone: '(555) 567-8901',
-      address: '654 Valley Rd, Anytown, ST 12345',
-      totalJobs: 8,
-      totalSpent: '$3,200.00',
-      lastJobDate: '2024-01-12',
-      status: 'Active',
-    },
-    {
-      id: 6,
-      name: 'Emily Davis',
-      type: 'Residential',
-      email: 'emily.davis@email.com',
-      phone: '(555) 678-9012',
-      address: '987 Elm St, Anytown, ST 12345',
-      totalJobs: 1,
-      totalSpent: '$180.00',
-      lastJobDate: '2023-12-20',
-      status: 'Inactive',
-    },
-  ]
+  const { customers, loading, fetchCustomers, createCustomer, updateCustomer, deleteCustomer } = useCustomers()
 
-  const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.phone.includes(searchTerm)
-    const matchesType = customerType === 'all' || customer.type === customerType
-    return matchesSearch && matchesType
-  })
+  useEffect(() => {
+    fetchCustomers()
+  }, [])
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Active':
-        return 'bg-success-50 text-success-700 border-success-200'
-      case 'Inactive':
-        return 'bg-gray-50 text-gray-700 border-gray-200'
-      default:
-        return 'bg-gray-50 text-gray-700 border-gray-200'
+  const handleNewCustomer = () => {
+    setSelectedCustomer(null)
+    setIsModalOpen(true)
+  }
+
+  const handleEditCustomer = (customer) => {
+    setSelectedCustomer(customer)
+    setIsModalOpen(true)
+  }
+
+  const handleDeleteCustomer = async (customer) => {
+    if (confirm(`Delete customer ${customer.name}?`)) {
+      try {
+        await deleteCustomer(customer.id)
+        alert('Customer deleted successfully!')
+      } catch (error) {
+        alert('Error deleting customer. Please try again.')
+      }
     }
+  }
+
+  const handleSaveCustomer = async (customerData) => {
+    try {
+      if (selectedCustomer) {
+        await updateCustomer(selectedCustomer.id, customerData)
+        alert('Customer updated successfully!')
+      } else {
+        await createCustomer(customerData)
+        alert('Customer created successfully!')
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  const handleContactCustomer = (type, customer) => {
+    if (type === 'email' && customer.email) {
+      window.open(`mailto:${customer.email}`)
+    } else if (type === 'call' && customer.phone) {
+      window.open(`tel:${customer.phone}`)
+    } else {
+      alert(`No ${type} information available for ${customer.name}`)
+    }
+  }
+
+  const filteredCustomers = customers.filter(customer =>
+    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (customer.phone && customer.phone.includes(searchTerm))
+  )
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-gray-600">Loading customers...</div>
+      </div>
+    )
   }
 
   return (
@@ -114,15 +90,18 @@ const Customers = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-          <p className="text-gray-600">Manage your customer relationships</p>
+          <p className="text-gray-600">Manage your customer database</p>
         </div>
-        <button className="btn-primary flex items-center">
+        <button 
+          onClick={handleNewCustomer}
+          className="btn-primary flex items-center hover:bg-primary-700 transition-colors"
+        >
           <Plus className="mr-2 h-4 w-4" />
           New Customer
         </button>
       </div>
 
-      {/* Filters */}
+      {/* Search and Filters */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
@@ -137,134 +116,102 @@ const Customers = () => {
               />
             </div>
           </div>
-          <div className="flex gap-2">
-            <select
-              className="input-field"
-              value={customerType}
-              onChange={(e) => setCustomerType(e.target.value)}
-            >
-              <option value="all">All Types</option>
-              <option value="Residential">Residential</option>
-              <option value="Commercial">Commercial</option>
-            </select>
-            <button className="btn-secondary flex items-center">
-              <Filter className="mr-2 h-4 w-4" />
-              More Filters
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* Customer Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <User className="h-8 w-8 text-primary-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Total Customers</p>
-              <p className="text-2xl font-bold text-gray-900">{customers.length}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <User className="h-8 w-8 text-success-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Active</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {customers.filter(c => c.status === 'Active').length}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <User className="h-8 w-8 text-warning-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Residential</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {customers.filter(c => c.type === 'Residential').length}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <Building className="h-8 w-8 text-primary-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Commercial</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {customers.filter(c => c.type === 'Commercial').length}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Customers List */}
-      <div className="bg-white shadow-sm rounded-lg border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
-            {filteredCustomers.length} Customers
-          </h3>
-        </div>
-        <div className="divide-y divide-gray-200">
-          {filteredCustomers.map((customer) => (
-            <div key={customer.id} className="p-6 hover:bg-gray-50">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h4 className="text-lg font-medium text-gray-900">{customer.name}</h4>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(customer.status)}`}>
-                      {customer.status}
-                    </span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700">
-                      {customer.type}
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Mail className="mr-2 h-4 w-4" />
-                        {customer.email}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Phone className="mr-2 h-4 w-4" />
-                        {customer.phone}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <MapPin className="mr-2 h-4 w-4" />
-                        {customer.address}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="text-sm">
-                        <span className="font-medium text-gray-900">Total Jobs:</span>
-                        <span className="ml-2 text-gray-500">{customer.totalJobs}</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="font-medium text-gray-900">Total Spent:</span>
-                        <span className="ml-2 text-gray-500">{customer.totalSpent}</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="font-medium text-gray-900">Last Job:</span>
-                        <span className="ml-2 text-gray-500">{customer.lastJobDate}</span>
-                      </div>
-                    </div>
-                  </div>
+      {/* Customers Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredCustomers.map((customer) => (
+          <div key={customer.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+                  <User className="h-6 w-6 text-primary-600" />
                 </div>
-                
-                <div className="ml-4">
-                  <button className="p-2 hover:bg-gray-100 rounded-full">
-                    <MoreHorizontal className="h-5 w-5 text-gray-400" />
-                  </button>
+                <div className="ml-3">
+                  <h3 className="text-lg font-medium text-gray-900">{customer.name}</h3>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    customer.status === 'VIP' 
+                      ? 'bg-yellow-100 text-yellow-800' 
+                      : customer.status === 'Active'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {customer.status}
+                  </span>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+
+            <div className="space-y-3">
+              {customer.email && (
+                <div className="flex items-center text-sm text-gray-600">
+                  <Mail className="mr-2 h-4 w-4" />
+                  <button 
+                    onClick={() => handleContactCustomer('email', customer)}
+                    className="hover:text-primary-600 transition-colors"
+                  >
+                    {customer.email}
+                  </button>
+                </div>
+              )}
+              {customer.phone && (
+                <div className="flex items-center text-sm text-gray-600">
+                  <Phone className="mr-2 h-4 w-4" />
+                  <button 
+                    onClick={() => handleContactCustomer('call', customer)}
+                    className="hover:text-primary-600 transition-colors"
+                  >
+                    {customer.phone}
+                  </button>
+                </div>
+              )}
+              {customer.address && (
+                <div className="flex items-center text-sm text-gray-600">
+                  <MapPin className="mr-2 h-4 w-4" />
+                  {customer.address}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Total Jobs</p>
+                  <p className="font-medium text-gray-900">{customer.total_jobs || 0}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Total Spent</p>
+                  <p className="font-medium text-gray-900">${parseFloat(customer.total_spent || 0).toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex space-x-2">
+              <button
+                onClick={() => alert(`Viewing customer ${customer.name}`)}
+                className="btn-secondary text-xs flex items-center hover:bg-gray-100 transition-colors"
+              >
+                <Eye className="mr-1 h-3 w-3" />
+                View
+              </button>
+              <button
+                onClick={() => handleEditCustomer(customer)}
+                className="btn-secondary text-xs flex items-center hover:bg-gray-100 transition-colors"
+              >
+                <Edit className="mr-1 h-3 w-3" />
+                Edit
+              </button>
+              <button
+                onClick={() => handleDeleteCustomer(customer)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded text-xs flex items-center transition-colors"
+              >
+                <Trash2 className="mr-1 h-3 w-3" />
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       {filteredCustomers.length === 0 && (
@@ -272,19 +219,29 @@ const Customers = () => {
           <User className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">No customers found</h3>
           <p className="mt-1 text-sm text-gray-500">
-            {searchTerm || customerType !== 'all' 
-              ? 'Try adjusting your search or filters' 
+            {searchTerm 
+              ? 'Try adjusting your search terms' 
               : 'Get started by adding your first customer'
             }
           </p>
           <div className="mt-6">
-            <button className="btn-primary">
+            <button 
+              onClick={handleNewCustomer}
+              className="btn-primary hover:bg-primary-700 transition-colors"
+            >
               <Plus className="mr-2 h-4 w-4" />
               New Customer
             </button>
           </div>
         </div>
       )}
+
+      <CustomerModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveCustomer}
+        customer={selectedCustomer}
+      />
     </div>
   )
 }

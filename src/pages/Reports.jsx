@@ -5,258 +5,298 @@ import {
   DollarSign, 
   Users, 
   Briefcase,
-  Calendar,
   Download,
-  Filter
+  Calendar,
+  Filter,
+  RefreshCw
 } from 'lucide-react'
 
 const Reports = () => {
-  const [dateRange, setDateRange] = useState('30')
+  const [dateRange, setDateRange] = useState('last-30-days')
   const [reportType, setReportType] = useState('overview')
 
-  // Sample data for charts and reports
-  const revenueData = [
-    { month: 'Jan', revenue: 4500, jobs: 15 },
-    { month: 'Feb', revenue: 5200, jobs: 18 },
-    { month: 'Mar', revenue: 4800, jobs: 16 },
-    { month: 'Apr', revenue: 6100, jobs: 22 },
-    { month: 'May', revenue: 5800, jobs: 20 },
-    { month: 'Jun', revenue: 6500, jobs: 24 },
+  const stats = [
+    {
+      name: 'Total Revenue',
+      value: '$45,231',
+      change: '+12.5%',
+      changeType: 'positive',
+      icon: DollarSign,
+    },
+    {
+      name: 'Jobs Completed',
+      value: '127',
+      change: '+8.2%',
+      changeType: 'positive',
+      icon: Briefcase,
+    },
+    {
+      name: 'New Customers',
+      value: '23',
+      change: '+15.3%',
+      changeType: 'positive',
+      icon: Users,
+    },
+    {
+      name: 'Average Job Value',
+      value: '$356',
+      change: '+4.1%',
+      changeType: 'positive',
+      icon: TrendingUp,
+    },
   ]
 
   const topServices = [
-    { service: 'Plumbing Repair', jobs: 45, revenue: 6750 },
-    { service: 'HVAC Maintenance', jobs: 32, revenue: 8960 },
-    { service: 'Electrical Work', jobs: 28, revenue: 8400 },
-    { service: 'Carpet Cleaning', jobs: 24, revenue: 4320 },
-    { service: 'Landscaping', jobs: 18, revenue: 8100 },
+    { name: 'Plumbing Repair', revenue: '$12,450', jobs: 45, percentage: 28 },
+    { name: 'HVAC Maintenance', revenue: '$9,800', jobs: 32, percentage: 22 },
+    { name: 'Electrical Work', revenue: '$8,200', jobs: 28, percentage: 18 },
+    { name: 'Landscaping', revenue: '$7,100', jobs: 24, percentage: 16 },
+    { name: 'Carpet Cleaning', revenue: '$4,900', jobs: 18, percentage: 11 },
   ]
 
-  const customerStats = [
-    { type: 'New Customers', count: 23, change: '+15%' },
-    { type: 'Repeat Customers', count: 67, change: '+8%' },
-    { type: 'Customer Retention', count: '85%', change: '+3%' },
-    { type: 'Avg. Customer Value', count: '$1,250', change: '+12%' },
+  const monthlyData = [
+    { month: 'Jan', revenue: 4200, jobs: 15 },
+    { month: 'Feb', revenue: 3800, jobs: 12 },
+    { month: 'Mar', revenue: 5100, jobs: 18 },
+    { month: 'Apr', revenue: 4600, jobs: 16 },
+    { month: 'May', revenue: 5800, jobs: 21 },
+    { month: 'Jun', revenue: 6200, jobs: 23 },
   ]
 
-  const jobStats = [
-    { status: 'Completed', count: 89, percentage: 65 },
-    { status: 'In Progress', count: 23, percentage: 17 },
-    { status: 'Scheduled', count: 18, percentage: 13 },
-    { status: 'Cancelled', count: 7, percentage: 5 },
-  ]
+  // Button handlers
+  const handleExportReport = () => {
+    alert('📊 Exporting report...')
+    console.log('Export report clicked')
+  }
+
+  const handleRefreshData = () => {
+    alert('🔄 Refreshing data...')
+    console.log('Refresh data clicked')
+  }
+
+  const handleGenerateReport = () => {
+    alert(`📈 Generating ${reportType} report for ${dateRange}...`)
+    console.log('Generate report:', { reportType, dateRange })
+  }
+
+  const handleDateRangeChange = (range) => {
+    setDateRange(range)
+    console.log('Date range changed:', range)
+  }
+
+  const handleReportTypeChange = (type) => {
+    setReportType(type)
+    console.log('Report type changed:', type)
+  }
+
+  const handleViewDetails = (service) => {
+    alert(`📋 Viewing details for ${service.name}`)
+    console.log('View service details:', service)
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-          <p className="text-gray-600">Analyze your business performance</p>
+          <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
+          <p className="text-gray-600">Track your business performance and insights</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <select
-            className="input-field"
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
+        <div className="flex space-x-3">
+          <button 
+            onClick={handleRefreshData}
+            className="btn-secondary flex items-center hover:bg-gray-100 transition-colors"
           >
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 3 months</option>
-            <option value="365">Last year</option>
-          </select>
-          <button className="btn-secondary flex items-center">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </button>
+          <button 
+            onClick={handleExportReport}
+            className="btn-primary flex items-center hover:bg-primary-700 transition-colors"
+          >
             <Download className="mr-2 h-4 w-4" />
-            Export
+            Export Report
           </button>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-primary-100 rounded-lg">
-              <DollarSign className="h-6 w-6 text-primary-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">$45,231</p>
-              <p className="text-sm text-success-600 flex items-center">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                +12% from last month
-              </p>
-            </div>
+      {/* Report Controls */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+            <select
+              className="input-field"
+              value={dateRange}
+              onChange={(e) => handleDateRangeChange(e.target.value)}
+            >
+              <option value="last-7-days">Last 7 days</option>
+              <option value="last-30-days">Last 30 days</option>
+              <option value="last-90-days">Last 90 days</option>
+              <option value="last-year">Last year</option>
+              <option value="custom">Custom range</option>
+            </select>
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+            <select
+              className="input-field"
+              value={reportType}
+              onChange={(e) => handleReportTypeChange(e.target.value)}
+            >
+              <option value="overview">Business Overview</option>
+              <option value="revenue">Revenue Analysis</option>
+              <option value="customers">Customer Report</option>
+              <option value="services">Service Performance</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <button 
+              onClick={handleGenerateReport}
+              className="btn-primary flex items-center hover:bg-primary-700 transition-colors"
+            >
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Generate Report
+            </button>
           </div>
         </div>
+      </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-success-100 rounded-lg">
-              <Briefcase className="h-6 w-6 text-success-600" />
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat) => {
+          const Icon = stat.icon
+          return (
+            <div key={stat.name} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <Icon className="h-8 w-8 text-primary-600" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">{stat.name}</dt>
+                    <dd className="flex items-baseline">
+                      <div className="text-2xl font-semibold text-gray-900">{stat.value}</div>
+                      <div className={`ml-2 flex items-baseline text-sm font-semibold ${
+                        stat.changeType === 'positive' ? 'text-success-600' : 'text-error-600'
+                      }`}>
+                        {stat.change}
+                      </div>
+                    </dd>
+                  </dl>
+                </div>
+              </div>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Jobs Completed</p>
-              <p className="text-2xl font-bold text-gray-900">89</p>
-              <p className="text-sm text-success-600 flex items-center">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                +8% from last month
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-warning-100 rounded-lg">
-              <Users className="h-6 w-6 text-warning-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">New Customers</p>
-              <p className="text-2xl font-bold text-gray-900">23</p>
-              <p className="text-sm text-success-600 flex items-center">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                +15% from last month
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <BarChart3 className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Avg. Job Value</p>
-              <p className="text-2xl font-bold text-gray-900">$508</p>
-              <p className="text-sm text-success-600 flex items-center">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                +5% from last month
-              </p>
-            </div>
-          </div>
-        </div>
+          )
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue Chart */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Revenue Trend</h3>
-            <select className="text-sm border-gray-300 rounded-md">
-              <option>Last 6 months</option>
-              <option>Last year</option>
-            </select>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-medium text-gray-900">Monthly Revenue</h3>
+            <button 
+              onClick={() => handleViewDetails({ name: 'Monthly Revenue' })}
+              className="text-primary-600 hover:text-primary-700 text-sm transition-colors"
+            >
+              View Details
+            </button>
           </div>
-          <div className="h-64 flex items-end justify-between space-x-2">
-            {revenueData.map((data, index) => (
-              <div key={index} className="flex flex-col items-center flex-1">
-                <div 
-                  className="w-full bg-primary-500 rounded-t-sm"
-                  style={{ height: `${(data.revenue / 7000) * 200}px` }}
-                ></div>
-                <span className="text-xs text-gray-500 mt-2">{data.month}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Job Status Distribution */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Job Status Distribution</h3>
-          <div className="space-y-4">
-            {jobStats.map((stat, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className={`w-3 h-3 rounded-full mr-3 ${
-                    stat.status === 'Completed' ? 'bg-success-500' :
-                    stat.status === 'In Progress' ? 'bg-warning-500' :
-                    stat.status === 'Scheduled' ? 'bg-primary-500' :
-                    'bg-gray-500'
-                  }`}></div>
-                  <span className="text-sm font-medium text-gray-700">{stat.status}</span>
-                </div>
+          <div className="space-y-3">
+            {monthlyData.map((data, index) => (
+              <div key={data.month} className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-24 bg-gray-200 rounded-full h-2">
+                  <span className="text-sm font-medium text-gray-900 w-8">{data.month}</span>
+                  <div className="flex-1 bg-gray-200 rounded-full h-2 w-32">
                     <div 
-                      className={`h-2 rounded-full ${
-                        stat.status === 'Completed' ? 'bg-success-500' :
-                        stat.status === 'In Progress' ? 'bg-warning-500' :
-                        stat.status === 'Scheduled' ? 'bg-primary-500' :
-                        'bg-gray-500'
-                      }`}
-                      style={{ width: `${stat.percentage}%` }}
+                      className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
+                      style={{ width: `${(data.revenue / 6200) * 100}%` }}
                     ></div>
                   </div>
-                  <span className="text-sm font-medium text-gray-900">{stat.count}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Services */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Top Services</h3>
-          <div className="space-y-4">
-            {topServices.map((service, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{service.service}</p>
-                  <p className="text-xs text-gray-500">{service.jobs} jobs</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">${service.revenue.toLocaleString()}</p>
-                  <p className="text-xs text-gray-500">${Math.round(service.revenue / service.jobs)} avg</p>
+                  <div className="text-sm font-medium text-gray-900">${data.revenue.toLocaleString()}</div>
+                  <div className="text-xs text-gray-500">{data.jobs} jobs</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Customer Statistics */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Customer Statistics</h3>
+        {/* Top Services */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-medium text-gray-900">Top Services</h3>
+            <button 
+              onClick={() => handleViewDetails({ name: 'Top Services' })}
+              className="text-primary-600 hover:text-primary-700 text-sm transition-colors"
+            >
+              View All
+            </button>
+          </div>
           <div className="space-y-4">
-            {customerStats.map((stat, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">{stat.type}</span>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-bold text-gray-900">{stat.count}</span>
-                  <span className="text-xs text-success-600">{stat.change}</span>
+            {topServices.map((service, index) => (
+              <div key={service.name} className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-900">{service.name}</span>
+                    <span className="text-sm text-gray-500">{service.percentage}%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{service.revenue}</span>
+                    <span>{service.jobs} jobs</span>
+                  </div>
+                  <div className="mt-1 bg-gray-200 rounded-full h-1.5">
+                    <div 
+                      className="bg-primary-600 h-1.5 rounded-full transition-all duration-300" 
+                      style={{ width: `${service.percentage}%` }}
+                    ></div>
+                  </div>
                 </div>
+                <button 
+                  onClick={() => handleViewDetails(service)}
+                  className="ml-3 p-1 hover:bg-gray-100 rounded transition-colors"
+                >
+                  <BarChart3 className="h-4 w-4 text-gray-400" />
+                </button>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Recent Activity */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
-        <div className="space-y-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-success-500 rounded-full"></div>
-            <span className="text-sm text-gray-600">Job #JOB-001 completed for John Smith - $150</span>
-            <span className="text-xs text-gray-400">2 hours ago</span>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
-            <span className="text-sm text-gray-600">New customer Sarah Johnson added</span>
-            <span className="text-xs text-gray-400">4 hours ago</span>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-warning-500 rounded-full"></div>
-            <span className="text-sm text-gray-600">Quote #QUO-003 sent to Mike Wilson</span>
-            <span className="text-xs text-gray-400">6 hours ago</span>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-success-500 rounded-full"></div>
-            <span className="text-sm text-gray-600">Invoice #INV-002 paid by ABC Corporation - $1,200</span>
-            <span className="text-xs text-gray-400">1 day ago</span>
-          </div>
+      {/* Additional Report Actions */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Reports</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button 
+            onClick={() => handleGenerateReport('customer-summary')}
+            className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary-300 transition-all"
+          >
+            <Users className="h-8 w-8 text-primary-600 mb-2" />
+            <span className="text-sm font-medium text-gray-900">Customer Summary</span>
+          </button>
+          <button 
+            onClick={() => handleGenerateReport('job-performance')}
+            className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary-300 transition-all"
+          >
+            <Briefcase className="h-8 w-8 text-primary-600 mb-2" />
+            <span className="text-sm font-medium text-gray-900">Job Performance</span>
+          </button>
+          <button 
+            onClick={() => handleGenerateReport('financial-summary')}
+            className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary-300 transition-all"
+          >
+            <DollarSign className="h-8 w-8 text-primary-600 mb-2" />
+            <span className="text-sm font-medium text-gray-900">Financial Summary</span>
+          </button>
+          <button 
+            onClick={() => handleGenerateReport('trend-analysis')}
+            className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary-300 transition-all"
+          >
+            <TrendingUp className="h-8 w-8 text-primary-600 mb-2" />
+            <span className="text-sm font-medium text-gray-900">Trend Analysis</span>
+          </button>
         </div>
       </div>
     </div>

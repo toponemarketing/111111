@@ -1,90 +1,105 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   Plus, 
   Search, 
   Filter, 
-  MoreHorizontal,
-  FileText,
   Download,
   Send,
   Eye,
+  Edit,
+  Trash2,
   DollarSign,
-  Calendar
+  Calendar,
+  User,
+  FileText
 } from 'lucide-react'
+import { useInvoices, useCustomers } from '../hooks/useSupabase'
+import InvoiceModal from '../components/modals/InvoiceModal'
 
 const Invoices = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState(null)
 
-  const invoices = [
-    {
-      id: 1,
-      invoiceNumber: 'INV-001',
-      customer: 'John Smith',
-      jobNumber: 'JOB-001',
-      issueDate: '2024-01-15',
-      dueDate: '2024-02-14',
-      amount: '$150.00',
-      status: 'Paid',
-      paidDate: '2024-01-20',
-      description: 'Kitchen sink leak repair',
-    },
-    {
-      id: 2,
-      invoiceNumber: 'INV-002',
-      customer: 'Sarah Johnson',
-      jobNumber: 'JOB-002',
-      issueDate: '2024-01-14',
-      dueDate: '2024-02-13',
-      amount: '$280.00',
-      status: 'Sent',
-      paidDate: null,
-      description: 'Annual HVAC system maintenance',
-    },
-    {
-      id: 3,
-      invoiceNumber: 'INV-003',
-      customer: 'ABC Corporation',
-      jobNumber: 'JOB-006',
-      issueDate: '2024-01-12',
-      dueDate: '2024-02-11',
-      amount: '$1,200.00',
-      status: 'Overdue',
-      paidDate: null,
-      description: 'Office electrical system upgrade',
-    },
-    {
-      id: 4,
-      invoiceNumber: 'INV-004',
-      customer: 'Mike Wilson',
-      jobNumber: 'JOB-003',
-      issueDate: '2024-01-16',
-      dueDate: '2024-02-15',
-      amount: '$320.00',
-      status: 'Draft',
-      paidDate: null,
-      description: 'Install new electrical outlets',
-    },
-    {
-      id: 5,
-      invoiceNumber: 'INV-005',
-      customer: 'Green Valley Apartments',
-      jobNumber: 'JOB-007',
-      issueDate: '2024-01-13',
-      dueDate: '2024-02-12',
-      amount: '$850.00',
-      status: 'Paid',
-      paidDate: '2024-01-18',
-      description: 'Plumbing maintenance - multiple units',
-    },
-  ]
+  const { invoices, loading, fetchInvoices, createInvoice, updateInvoice, deleteInvoice } = useInvoices()
+  const { customers, fetchCustomers } = useCustomers()
+
+  useEffect(() => {
+    fetchInvoices()
+    fetchCustomers()
+  }, [])
+
+  const handleNewInvoice = () => {
+    setSelectedInvoice(null)
+    setIsModalOpen(true)
+  }
+
+  const handleEditInvoice = (invoice) => {
+    setSelectedInvoice(invoice)
+    setIsModalOpen(true)
+  }
+
+  const handleDeleteInvoice = async (invoice) => {
+    if (confirm(`Delete invoice ${invoice.invoice_number}?`)) {
+      try {
+        await deleteInvoice(invoice.id)
+        alert('Invoice deleted successfully!')
+      } catch (error) {
+        alert('Error deleting invoice. Please try again.')
+      }
+    }
+  }
+
+  const handleSaveInvoice = async (invoiceData) => {
+    try {
+      if (selectedInvoice) {
+        await updateInvoice(selectedInvoice.id, invoiceData)
+        alert('Invoice updated successfully!')
+      } else {
+        await createInvoice(invoiceData)
+        alert('Invoice created successfully!')
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  const handleInvoiceAction = async (action, invoice) => {
+    switch (action) {
+      case 'view':
+        alert(`Viewing invoice ${invoice.invoice_number}`)
+        break
+      case 'download':
+        alert(`Downloading invoice ${invoice.invoice_number}`)
+        break
+      case 'send':
+        try {
+          await updateInvoice(invoice.id, { status: 'Pending' })
+          alert(`Invoice ${invoice.invoice_number} sent to ${invoice.customer?.name}`)
+        } catch (error) {
+          alert('Error sending invoice. Please try again.')
+        }
+        break
+      case 'mark-paid':
+        try {
+          await updateInvoice(invoice.id, { status: 'Paid' })
+          alert(`Invoice ${invoice.invoice_number} marked as paid`)
+        } catch (error) {
+          alert('Error updating invoice status. Please try again.')
+        }
+        break
+      default:
+        alert(`Action: ${action} for ${invoice.invoice_number}`)
+    }
+  }
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'Paid':
         return 'bg-success-50 text-success-700 border-success-200'
-      case 'Sent':
-        return 'bg-primary-50 text-primary-700 border-primary-200'
+      case 'Pending':
+        return 'bg-warning-50 text-warning-700 border-warning-200'
       case 'Overdue':
         return 'bg-error-50 text-error-700 border-error-200'
       case 'Draft':
@@ -95,69 +110,36 @@ const Invoices = () => {
   }
 
   const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch = invoice.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         invoice.jobNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    const customerName = invoice.customer?.name || ''
+    const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         invoice.service.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter
     return matchesSearch && matchesStatus
   })
 
-  // Calculate totals
-  const totalAmount = invoices.reduce((sum, invoice) => sum + parseFloat(invoice.amount.replace('$', '').replace(',', '')), 0)
-  const paidAmount = invoices.filter(inv => inv.status === 'Paid').reduce((sum, invoice) => sum + parseFloat(invoice.amount.replace('$', '').replace(',', '')), 0)
-  const outstandingAmount = totalAmount - paidAmount
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-gray-600">Loading invoices...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
-          <p className="text-gray-600">Manage your billing and payments</p>
+          <p className="text-gray-600">Manage your invoices and payments</p>
         </div>
-        <button className="btn-primary flex items-center">
+        <button 
+          onClick={handleNewInvoice}
+          className="btn-primary flex items-center hover:bg-primary-700 transition-colors"
+        >
           <Plus className="mr-2 h-4 w-4" />
           New Invoice
         </button>
-      </div>
-
-      {/* Invoice Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <FileText className="h-8 w-8 text-primary-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Total Invoices</p>
-              <p className="text-2xl font-bold text-gray-900">{invoices.length}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <DollarSign className="h-8 w-8 text-success-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Total Amount</p>
-              <p className="text-2xl font-bold text-gray-900">${totalAmount.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <DollarSign className="h-8 w-8 text-success-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Paid</p>
-              <p className="text-2xl font-bold text-gray-900">${paidAmount.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <DollarSign className="h-8 w-8 text-warning-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Outstanding</p>
-              <p className="text-2xl font-bold text-gray-900">${outstandingAmount.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Filters */}
@@ -168,7 +150,7 @@ const Invoices = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search invoices, customers, or job numbers..."
+                placeholder="Search invoices, customers, or services..."
                 className="pl-10 input-field"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -183,14 +165,10 @@ const Invoices = () => {
             >
               <option value="all">All Status</option>
               <option value="Draft">Draft</option>
-              <option value="Sent">Sent</option>
+              <option value="Pending">Pending</option>
               <option value="Paid">Paid</option>
               <option value="Overdue">Overdue</option>
             </select>
-            <button className="btn-secondary flex items-center">
-              <Filter className="mr-2 h-4 w-4" />
-              More Filters
-            </button>
           </div>
         </div>
       </div>
@@ -204,11 +182,11 @@ const Invoices = () => {
         </div>
         <div className="divide-y divide-gray-200">
           {filteredInvoices.map((invoice) => (
-            <div key={invoice.id} className="p-6 hover:bg-gray-50">
+            <div key={invoice.id} className="p-6 hover:bg-gray-50 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <h4 className="text-lg font-medium text-gray-900">{invoice.invoiceNumber}</h4>
+                    <h4 className="text-lg font-medium text-gray-900">{invoice.invoice_number}</h4>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(invoice.status)}`}>
                       {invoice.status}
                     </span>
@@ -216,49 +194,81 @@ const Invoices = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{invoice.customer}</p>
-                      <p className="text-sm text-gray-500">Job: {invoice.jobNumber}</p>
-                      <p className="text-sm text-gray-500 mt-1">{invoice.description}</p>
+                      <div className="flex items-center text-sm text-gray-600 mb-1">
+                        <User className="mr-2 h-4 w-4" />
+                        {invoice.customer?.name || 'No customer'}
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600 mb-1">
+                        <FileText className="mr-2 h-4 w-4" />
+                        {invoice.service}
+                      </div>
+                      <div className="flex items-center text-sm text-gray-900 font-medium">
+                        <DollarSign className="mr-2 h-4 w-4" />
+                        ${parseFloat(invoice.amount).toFixed(2)}
+                      </div>
                     </div>
                     
-                    <div className="space-y-2">
-                      <div className="flex items-center text-sm text-gray-500">
+                    <div>
+                      <div className="flex items-center text-sm text-gray-600 mb-1">
                         <Calendar className="mr-2 h-4 w-4" />
-                        Issued: {invoice.issueDate}
+                        Issued: {invoice.issue_date}
                       </div>
-                      <div className="flex items-center text-sm text-gray-500">
+                      <div className="flex items-center text-sm text-gray-600">
                         <Calendar className="mr-2 h-4 w-4" />
-                        Due: {invoice.dueDate}
-                      </div>
-                      {invoice.paidDate && (
-                        <div className="flex items-center text-sm text-success-600">
-                          <Calendar className="mr-2 h-4 w-4" />
-                          Paid: {invoice.paidDate}
-                        </div>
-                      )}
-                      <div className="flex items-center text-lg font-bold text-gray-900">
-                        <DollarSign className="mr-1 h-5 w-5" />
-                        {invoice.amount}
+                        Due: {invoice.due_date}
                       </div>
                     </div>
                   </div>
-                </div>
-                
-                <div className="ml-4 flex items-center space-x-2">
-                  <button className="p-2 hover:bg-gray-100 rounded-full" title="View">
-                    <Eye className="h-4 w-4 text-gray-400" />
-                  </button>
-                  <button className="p-2 hover:bg-gray-100 rounded-full" title="Download">
-                    <Download className="h-4 w-4 text-gray-400" />
-                  </button>
-                  {invoice.status !== 'Paid' && (
-                    <button className="p-2 hover:bg-gray-100 rounded-full" title="Send">
-                      <Send className="h-4 w-4 text-gray-400" />
+
+                  {/* Action buttons */}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleInvoiceAction('view', invoice)}
+                      className="btn-secondary text-xs flex items-center hover:bg-gray-100 transition-colors"
+                    >
+                      <Eye className="mr-1 h-3 w-3" />
+                      View
                     </button>
-                  )}
-                  <button className="p-2 hover:bg-gray-100 rounded-full">
-                    <MoreHorizontal className="h-5 w-5 text-gray-400" />
-                  </button>
+                    <button
+                      onClick={() => handleEditInvoice(invoice)}
+                      className="btn-secondary text-xs flex items-center hover:bg-gray-100 transition-colors"
+                    >
+                      <Edit className="mr-1 h-3 w-3" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleInvoiceAction('download', invoice)}
+                      className="btn-secondary text-xs flex items-center hover:bg-gray-100 transition-colors"
+                    >
+                      <Download className="mr-1 h-3 w-3" />
+                      Download
+                    </button>
+                    {invoice.status !== 'Paid' && (
+                      <button
+                        onClick={() => handleInvoiceAction('send', invoice)}
+                        className="btn-secondary text-xs flex items-center hover:bg-gray-100 transition-colors"
+                      >
+                        <Send className="mr-1 h-3 w-3" />
+                        Send
+                      </button>
+                    )}
+                    {invoice.status === 'Pending' && (
+                      <button
+                        onClick={() => handleInvoiceAction('mark-paid', invoice)}
+                        className="bg-success-600 hover:bg-success-700 text-white px-2 py-1 rounded text-xs flex items-center transition-colors"
+                      >
+                        <DollarSign className="mr-1 h-3 w-3" />
+                        Mark Paid
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDeleteInvoice(invoice)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded text-xs flex items-center transition-colors"
+                    >
+                      <Trash2 className="mr-1 h-3 w-3" />
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -277,13 +287,24 @@ const Invoices = () => {
             }
           </p>
           <div className="mt-6">
-            <button className="btn-primary">
+            <button 
+              onClick={handleNewInvoice}
+              className="btn-primary hover:bg-primary-700 transition-colors"
+            >
               <Plus className="mr-2 h-4 w-4" />
               New Invoice
             </button>
           </div>
         </div>
       )}
+
+      <InvoiceModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveInvoice}
+        invoice={selectedInvoice}
+        customers={customers}
+      />
     </div>
   )
 }

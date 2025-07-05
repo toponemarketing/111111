@@ -1,114 +1,139 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   Plus, 
   Search, 
   Filter, 
-  MoreHorizontal,
-  FileText,
   Send,
   Eye,
+  Edit,
+  Trash2,
   DollarSign,
   Calendar,
+  User,
+  FileText,
   CheckCircle,
   XCircle
 } from 'lucide-react'
+import { useQuotes, useCustomers } from '../hooks/useSupabase'
+import QuoteModal from '../components/modals/QuoteModal'
 
 const Quotes = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedQuote, setSelectedQuote] = useState(null)
 
-  const quotes = [
-    {
-      id: 1,
-      quoteNumber: 'QUO-001',
-      customer: 'Emily Davis',
-      service: 'Carpet Cleaning',
-      issueDate: '2024-01-10',
-      expiryDate: '2024-02-10',
-      amount: '$180.00',
-      status: 'Sent',
-      description: 'Deep carpet cleaning for living room and bedrooms',
-      validUntil: '2024-02-10',
-    },
-    {
-      id: 2,
-      quoteNumber: 'QUO-002',
-      customer: 'David Miller',
-      service: 'Kitchen Renovation',
-      issueDate: '2024-01-12',
-      expiryDate: '2024-02-12',
-      amount: '$2,500.00',
-      status: 'Accepted',
-      description: 'Complete kitchen renovation including cabinets and countertops',
-      validUntil: '2024-02-12',
-    },
-    {
-      id: 3,
-      quoteNumber: 'QUO-003',
-      customer: 'Lisa Anderson',
-      service: 'Bathroom Remodel',
-      issueDate: '2024-01-08',
-      expiryDate: '2024-02-08',
-      amount: '$1,800.00',
-      status: 'Expired',
-      description: 'Master bathroom remodel with new fixtures',
-      validUntil: '2024-02-08',
-    },
-    {
-      id: 4,
-      quoteNumber: 'QUO-004',
-      customer: 'Tech Solutions Inc',
-      service: 'Office Cleaning',
-      issueDate: '2024-01-14',
-      expiryDate: '2024-02-14',
-      amount: '$450.00',
-      status: 'Draft',
-      description: 'Monthly office cleaning service contract',
-      validUntil: '2024-02-14',
-    },
-    {
-      id: 5,
-      quoteNumber: 'QUO-005',
-      customer: 'Jennifer White',
-      service: 'Landscaping',
-      issueDate: '2024-01-11',
-      expiryDate: '2024-02-11',
-      amount: '$750.00',
-      status: 'Declined',
-      description: 'Front yard landscaping and garden design',
-      validUntil: '2024-02-11',
-    },
-  ]
+  const { quotes, loading, fetchQuotes, createQuote, updateQuote, deleteQuote } = useQuotes()
+  const { customers, fetchCustomers } = useCustomers()
+
+  useEffect(() => {
+    fetchQuotes()
+    fetchCustomers()
+  }, [])
+
+  const handleNewQuote = () => {
+    setSelectedQuote(null)
+    setIsModalOpen(true)
+  }
+
+  const handleEditQuote = (quote) => {
+    setSelectedQuote(quote)
+    setIsModalOpen(true)
+  }
+
+  const handleDeleteQuote = async (quote) => {
+    if (confirm(`Delete quote ${quote.quote_number}?`)) {
+      try {
+        await deleteQuote(quote.id)
+        alert('Quote deleted successfully!')
+      } catch (error) {
+        alert('Error deleting quote. Please try again.')
+      }
+    }
+  }
+
+  const handleSaveQuote = async (quoteData) => {
+    try {
+      if (selectedQuote) {
+        await updateQuote(selectedQuote.id, quoteData)
+        alert('Quote updated successfully!')
+      } else {
+        await createQuote(quoteData)
+        alert('Quote created successfully!')
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  const handleQuoteAction = async (action, quote) => {
+    switch (action) {
+      case 'view':
+        alert(`Viewing quote ${quote.quote_number}`)
+        break
+      case 'send':
+        try {
+          await updateQuote(quote.id, { status: 'Pending' })
+          alert(`Quote ${quote.quote_number} sent to ${quote.customer?.name}`)
+        } catch (error) {
+          alert('Error sending quote. Please try again.')
+        }
+        break
+      case 'convert':
+        alert(`Converting quote ${quote.quote_number} to job`)
+        break
+      case 'duplicate':
+        try {
+          const duplicateData = {
+            customer_id: quote.customer_id,
+            service: quote.service,
+            description: quote.description,
+            amount: quote.amount,
+            status: 'Draft',
+            valid_until: quote.valid_until
+          }
+          await createQuote(duplicateData)
+          alert(`Quote ${quote.quote_number} duplicated successfully!`)
+        } catch (error) {
+          alert('Error duplicating quote. Please try again.')
+        }
+        break
+      default:
+        alert(`Action: ${action} for ${quote.quote_number}`)
+    }
+  }
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'Accepted':
         return 'bg-success-50 text-success-700 border-success-200'
-      case 'Sent':
-        return 'bg-primary-50 text-primary-700 border-primary-200'
-      case 'Declined':
-        return 'bg-error-50 text-error-700 border-error-200'
-      case 'Expired':
-        return 'bg-gray-50 text-gray-700 border-gray-200'
-      case 'Draft':
+      case 'Pending':
         return 'bg-warning-50 text-warning-700 border-warning-200'
+      case 'Rejected':
+        return 'bg-error-50 text-error-700 border-error-200'
+      case 'Draft':
+        return 'bg-gray-50 text-gray-700 border-gray-200'
       default:
         return 'bg-gray-50 text-gray-700 border-gray-200'
     }
   }
 
   const filteredQuotes = quotes.filter(quote => {
-    const matchesSearch = quote.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quote.quoteNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const customerName = quote.customer?.name || ''
+    const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          quote.service.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || quote.status === statusFilter
     return matchesSearch && matchesStatus
   })
 
-  // Calculate totals
-  const totalAmount = quotes.reduce((sum, quote) => sum + parseFloat(quote.amount.replace('$', '').replace(',', '')), 0)
-  const acceptedAmount = quotes.filter(q => q.status === 'Accepted').reduce((sum, quote) => sum + parseFloat(quote.amount.replace('$', '').replace(',', '')), 0)
-  const pendingAmount = quotes.filter(q => q.status === 'Sent').reduce((sum, quote) => sum + parseFloat(quote.amount.replace('$', '').replace(',', '')), 0)
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-gray-600">Loading quotes...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -117,50 +142,13 @@ const Quotes = () => {
           <h1 className="text-2xl font-bold text-gray-900">Quotes</h1>
           <p className="text-gray-600">Create and manage your service quotes</p>
         </div>
-        <button className="btn-primary flex items-center">
+        <button 
+          onClick={handleNewQuote}
+          className="btn-primary flex items-center hover:bg-primary-700 transition-colors"
+        >
           <Plus className="mr-2 h-4 w-4" />
           New Quote
         </button>
-      </div>
-
-      {/* Quote Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <FileText className="h-8 w-8 text-primary-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Total Quotes</p>
-              <p className="text-2xl font-bold text-gray-900">{quotes.length}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <DollarSign className="h-8 w-8 text-success-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Total Value</p>
-              <p className="text-2xl font-bold text-gray-900">${totalAmount.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <CheckCircle className="h-8 w-8 text-success-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Accepted</p>
-              <p className="text-2xl font-bold text-gray-900">${acceptedAmount.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <DollarSign className="h-8 w-8 text-warning-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Pending</p>
-              <p className="text-2xl font-bold text-gray-900">${pendingAmount.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Filters */}
@@ -186,15 +174,10 @@ const Quotes = () => {
             >
               <option value="all">All Status</option>
               <option value="Draft">Draft</option>
-              <option value="Sent">Sent</option>
+              <option value="Pending">Pending</option>
               <option value="Accepted">Accepted</option>
-              <option value="Declined">Declined</option>
-              <option value="Expired">Expired</option>
+              <option value="Rejected">Rejected</option>
             </select>
-            <button className="btn-secondary flex items-center">
-              <Filter className="mr-2 h-4 w-4" />
-              More Filters
-            </button>
           </div>
         </div>
       </div>
@@ -208,11 +191,11 @@ const Quotes = () => {
         </div>
         <div className="divide-y divide-gray-200">
           {filteredQuotes.map((quote) => (
-            <div key={quote.id} className="p-6 hover:bg-gray-50">
+            <div key={quote.id} className="p-6 hover:bg-gray-50 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <h4 className="text-lg font-medium text-gray-900">{quote.quoteNumber}</h4>
+                    <h4 className="text-lg font-medium text-gray-900">{quote.quote_number}</h4>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(quote.status)}`}>
                       {quote.status}
                     </span>
@@ -220,50 +203,82 @@ const Quotes = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{quote.customer}</p>
-                      <p className="text-sm text-gray-500">{quote.service}</p>
+                      <div className="flex items-center text-sm text-gray-600 mb-1">
+                        <User className="mr-2 h-4 w-4" />
+                        {quote.customer?.name || 'No customer'}
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600 mb-1">
+                        <FileText className="mr-2 h-4 w-4" />
+                        {quote.service}
+                      </div>
                       <p className="text-sm text-gray-500 mt-1">{quote.description}</p>
+                      <div className="flex items-center text-sm text-gray-900 font-medium mt-2">
+                        <DollarSign className="mr-2 h-4 w-4" />
+                        ${parseFloat(quote.amount).toFixed(2)}
+                      </div>
                     </div>
                     
-                    <div className="space-y-2">
-                      <div className="flex items-center text-sm text-gray-500">
+                    <div>
+                      <div className="flex items-center text-sm text-gray-600 mb-1">
                         <Calendar className="mr-2 h-4 w-4" />
-                        Issued: {quote.issueDate}
+                        Created: {new Date(quote.created_at).toLocaleDateString()}
                       </div>
-                      <div className="flex items-center text-sm text-gray-500">
+                      <div className="flex items-center text-sm text-gray-600">
                         <Calendar className="mr-2 h-4 w-4" />
-                        Expires: {quote.expiryDate}
-                      </div>
-                      <div className="flex items-center text-lg font-bold text-gray-900">
-                        <DollarSign className="mr-1 h-5 w-5" />
-                        {quote.amount}
+                        Valid until: {quote.valid_until}
                       </div>
                     </div>
                   </div>
-                </div>
-                
-                <div className="ml-4 flex items-center space-x-2">
-                  <button className="p-2 hover:bg-gray-100 rounded-full" title="View">
-                    <Eye className="h-4 w-4 text-gray-400" />
-                  </button>
-                  {quote.status === 'Draft' && (
-                    <button className="p-2 hover:bg-gray-100 rounded-full" title="Send">
-                      <Send className="h-4 w-4 text-gray-400" />
+
+                  {/* Action buttons */}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleQuoteAction('view', quote)}
+                      className="btn-secondary text-xs flex items-center hover:bg-gray-100 transition-colors"
+                    >
+                      <Eye className="mr-1 h-3 w-3" />
+                      View
                     </button>
-                  )}
-                  {quote.status === 'Sent' && (
-                    <>
-                      <button className="p-2 hover:bg-gray-100 rounded-full text-success-600" title="Accept">
-                        <CheckCircle className="h-4 w-4" />
+                    <button
+                      onClick={() => handleEditQuote(quote)}
+                      className="btn-secondary text-xs flex items-center hover:bg-gray-100 transition-colors"
+                    >
+                      <Edit className="mr-1 h-3 w-3" />
+                      Edit
+                    </button>
+                    {quote.status !== 'Accepted' && quote.status !== 'Rejected' && (
+                      <button
+                        onClick={() => handleQuoteAction('send', quote)}
+                        className="btn-secondary text-xs flex items-center hover:bg-gray-100 transition-colors"
+                      >
+                        <Send className="mr-1 h-3 w-3" />
+                        Send
                       </button>
-                      <button className="p-2 hover:bg-gray-100 rounded-full text-error-600" title="Decline">
-                        <XCircle className="h-4 w-4" />
+                    )}
+                    {quote.status === 'Accepted' && (
+                      <button
+                        onClick={() => handleQuoteAction('convert', quote)}
+                        className="bg-primary-600 hover:bg-primary-700 text-white px-2 py-1 rounded text-xs flex items-center transition-colors"
+                      >
+                        <CheckCircle className="mr-1 h-3 w-3" />
+                        Convert to Job
                       </button>
-                    </>
-                  )}
-                  <button className="p-2 hover:bg-gray-100 rounded-full">
-                    <MoreHorizontal className="h-5 w-5 text-gray-400" />
-                  </button>
+                    )}
+                    <button
+                      onClick={() => handleQuoteAction('duplicate', quote)}
+                      className="btn-secondary text-xs flex items-center hover:bg-gray-100 transition-colors"
+                    >
+                      <FileText className="mr-1 h-3 w-3" />
+                      Duplicate
+                    </button>
+                    <button
+                      onClick={() => handleDeleteQuote(quote)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded text-xs flex items-center transition-colors"
+                    >
+                      <Trash2 className="mr-1 h-3 w-3" />
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -273,7 +288,7 @@ const Quotes = () => {
 
       {filteredQuotes.length === 0 && (
         <div className="text-center py-12">
-          <FileText className="mx-auto h-12 w-12 text-gray-400" />
+          <DollarSign className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">No quotes found</h3>
           <p className="mt-1 text-sm text-gray-500">
             {searchTerm || statusFilter !== 'all' 
@@ -282,13 +297,24 @@ const Quotes = () => {
             }
           </p>
           <div className="mt-6">
-            <button className="btn-primary">
+            <button 
+              onClick={handleNewQuote}
+              className="btn-primary hover:bg-primary-700 transition-colors"
+            >
               <Plus className="mr-2 h-4 w-4" />
               New Quote
             </button>
           </div>
         </div>
       )}
+
+      <QuoteModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveQuote}
+        quote={selectedQuote}
+        customers={customers}
+      />
     </div>
   )
 }

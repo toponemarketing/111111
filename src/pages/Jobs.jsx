@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   Plus, 
   Search, 
@@ -7,80 +7,67 @@ import {
   Calendar,
   MapPin,
   DollarSign,
-  Clock
+  Clock,
+  Briefcase,
+  Edit,
+  Trash2,
+  Eye
 } from 'lucide-react'
+import { useJobs, useCustomers } from '../hooks/useSupabase'
+import JobModal from '../components/modals/JobModal'
 
 const Jobs = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedJob, setSelectedJob] = useState(null)
 
-  const jobs = [
-    {
-      id: 1,
-      jobNumber: 'JOB-001',
-      customer: 'John Smith',
-      service: 'Plumbing Repair',
-      status: 'In Progress',
-      priority: 'High',
-      scheduledDate: '2024-01-15',
-      scheduledTime: '9:00 AM',
-      address: '123 Main St, Anytown',
-      amount: '$150.00',
-      description: 'Kitchen sink leak repair',
-    },
-    {
-      id: 2,
-      jobNumber: 'JOB-002',
-      customer: 'Sarah Johnson',
-      service: 'HVAC Maintenance',
-      status: 'Completed',
-      priority: 'Medium',
-      scheduledDate: '2024-01-14',
-      scheduledTime: '2:00 PM',
-      address: '456 Oak Ave, Anytown',
-      amount: '$280.00',
-      description: 'Annual HVAC system maintenance',
-    },
-    {
-      id: 3,
-      jobNumber: 'JOB-003',
-      customer: 'Mike Wilson',
-      service: 'Electrical Work',
-      status: 'Scheduled',
-      priority: 'Low',
-      scheduledDate: '2024-01-16',
-      scheduledTime: '10:30 AM',
-      address: '789 Pine St, Anytown',
-      amount: '$320.00',
-      description: 'Install new electrical outlets',
-    },
-    {
-      id: 4,
-      jobNumber: 'JOB-004',
-      customer: 'Emily Davis',
-      service: 'Carpet Cleaning',
-      status: 'Quote Sent',
-      priority: 'Medium',
-      scheduledDate: '2024-01-17',
-      scheduledTime: '1:00 PM',
-      address: '321 Elm St, Anytown',
-      amount: '$180.00',
-      description: 'Deep carpet cleaning for living room',
-    },
-    {
-      id: 5,
-      jobNumber: 'JOB-005',
-      customer: 'Robert Brown',
-      service: 'Landscaping',
-      status: 'In Progress',
-      priority: 'High',
-      scheduledDate: '2024-01-15',
-      scheduledTime: '8:00 AM',
-      address: '654 Maple Dr, Anytown',
-      amount: '$450.00',
-      description: 'Garden redesign and maintenance',
-    },
-  ]
+  const { jobs, loading, fetchJobs, createJob, updateJob, deleteJob } = useJobs()
+  const { customers, fetchCustomers } = useCustomers()
+
+  useEffect(() => {
+    fetchJobs()
+    fetchCustomers()
+  }, [])
+
+  const handleNewJob = () => {
+    setSelectedJob(null)
+    setIsModalOpen(true)
+  }
+
+  const handleEditJob = (job) => {
+    setSelectedJob(job)
+    setIsModalOpen(true)
+  }
+
+  const handleDeleteJob = async (job) => {
+    if (confirm(`Delete job ${job.job_number}?`)) {
+      try {
+        await deleteJob(job.id)
+        alert('Job deleted successfully!')
+      } catch (error) {
+        alert('Error deleting job. Please try again.')
+      }
+    }
+  }
+
+  const handleSaveJob = async (jobData) => {
+    try {
+      if (selectedJob) {
+        await updateJob(selectedJob.id, jobData)
+        alert('Job updated successfully!')
+      } else {
+        await createJob(jobData)
+        alert('Job created successfully!')
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  const handleViewJob = (job) => {
+    alert(`Viewing job ${job.job_number} - ${job.service}`)
+  }
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -111,12 +98,21 @@ const Jobs = () => {
   }
 
   const filteredJobs = jobs.filter(job => {
-    const matchesSearch = job.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const customerName = job.customer?.name || ''
+    const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          job.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.jobNumber.toLowerCase().includes(searchTerm.toLowerCase())
+                         job.job_number.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || job.status === statusFilter
     return matchesSearch && matchesStatus
   })
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-gray-600">Loading jobs...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -125,7 +121,10 @@ const Jobs = () => {
           <h1 className="text-2xl font-bold text-gray-900">Jobs</h1>
           <p className="text-gray-600">Manage and track all your service jobs</p>
         </div>
-        <button className="btn-primary flex items-center">
+        <button 
+          onClick={handleNewJob}
+          className="btn-primary flex items-center hover:bg-primary-700 transition-colors"
+        >
           <Plus className="mr-2 h-4 w-4" />
           New Job
         </button>
@@ -158,10 +157,6 @@ const Jobs = () => {
               <option value="Completed">Completed</option>
               <option value="Quote Sent">Quote Sent</option>
             </select>
-            <button className="btn-secondary flex items-center">
-              <Filter className="mr-2 h-4 w-4" />
-              More Filters
-            </button>
           </div>
         </div>
       </div>
@@ -175,11 +170,11 @@ const Jobs = () => {
         </div>
         <div className="divide-y divide-gray-200">
           {filteredJobs.map((job) => (
-            <div key={job.id} className="p-6 hover:bg-gray-50">
+            <div key={job.id} className="p-6 hover:bg-gray-50 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <h4 className="text-lg font-medium text-gray-900">{job.jobNumber}</h4>
+                    <h4 className="text-lg font-medium text-gray-900">{job.job_number}</h4>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(job.status)}`}>
                       {job.status}
                     </span>
@@ -190,32 +185,57 @@ const Jobs = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{job.customer}</p>
+                      <p className="text-sm font-medium text-gray-900">{job.customer?.name || 'No customer'}</p>
                       <p className="text-sm text-gray-500">{job.service}</p>
                       <p className="text-sm text-gray-500 mt-1">{job.description}</p>
                     </div>
                     
                     <div className="space-y-2">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {job.scheduledDate} at {job.scheduledTime}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <MapPin className="mr-2 h-4 w-4" />
-                        {job.address}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-900 font-medium">
-                        <DollarSign className="mr-2 h-4 w-4" />
-                        {job.amount}
-                      </div>
+                      {job.scheduled_date && (
+                        <div className="flex items-center text-sm text-gray-500">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {job.scheduled_date} {job.scheduled_time && `at ${job.scheduled_time}`}
+                        </div>
+                      )}
+                      {job.address && (
+                        <div className="flex items-center text-sm text-gray-500">
+                          <MapPin className="mr-2 h-4 w-4" />
+                          {job.address}
+                        </div>
+                      )}
+                      {job.amount && (
+                        <div className="flex items-center text-sm text-gray-900 font-medium">
+                          <DollarSign className="mr-2 h-4 w-4" />
+                          ${parseFloat(job.amount).toFixed(2)}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-                
-                <div className="ml-4">
-                  <button className="p-2 hover:bg-gray-100 rounded-full">
-                    <MoreHorizontal className="h-5 w-5 text-gray-400" />
-                  </button>
+
+                  {/* Action buttons */}
+                  <div className="mt-4 flex space-x-2">
+                    <button
+                      onClick={() => handleViewJob(job)}
+                      className="btn-secondary text-xs flex items-center hover:bg-gray-100 transition-colors"
+                    >
+                      <Eye className="mr-1 h-3 w-3" />
+                      View
+                    </button>
+                    <button
+                      onClick={() => handleEditJob(job)}
+                      className="btn-secondary text-xs flex items-center hover:bg-gray-100 transition-colors"
+                    >
+                      <Edit className="mr-1 h-3 w-3" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteJob(job)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded text-xs flex items-center transition-colors"
+                    >
+                      <Trash2 className="mr-1 h-3 w-3" />
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -234,13 +254,24 @@ const Jobs = () => {
             }
           </p>
           <div className="mt-6">
-            <button className="btn-primary">
+            <button 
+              onClick={handleNewJob}
+              className="btn-primary hover:bg-primary-700 transition-colors"
+            >
               <Plus className="mr-2 h-4 w-4" />
               New Job
             </button>
           </div>
         </div>
       )}
+
+      <JobModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveJob}
+        job={selectedJob}
+        customers={customers}
+      />
     </div>
   )
 }
