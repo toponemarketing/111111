@@ -59,7 +59,7 @@ const Hero = () => {
                 </div>
               ) : (
                 // Fallback design when image fails to load
-                <div className="aspect-square rounded-3xl bg-gradient-to-br from-primary-200 to-lavender-200 flex items-center justify-center">
+                <div className="aspect-square rounded-3xl bg-gradient-to-br from-primary-200 to-lavender-200 flex items-center justify-center shadow-2xl">
                   <div className="text-center space-y-4 p-8">
                     <div className="w-32 h-32 bg-white rounded-full mx-auto flex items-center justify-center">
                       <Heart className="h-16 w-16 text-primary-600" />
@@ -68,6 +68,14 @@ const Hero = () => {
                       "Healing is possible. And together, we can get there."
                     </p>
                     <p className="text-primary-600 font-semibold">- Kim</p>
+                  </div>
+                  
+                  {/* Floating elements for fallback too */}
+                  <div className="absolute -top-4 -right-4 bg-warm-400 rounded-full p-4 shadow-lg">
+                    <div className="w-8 h-8 bg-white rounded-full"></div>
+                  </div>
+                  <div className="absolute -bottom-4 -left-4 bg-lavender-400 rounded-full p-6 shadow-lg">
+                    <div className="w-6 h-6 bg-white rounded-full"></div>
                   </div>
                 </div>
               )}

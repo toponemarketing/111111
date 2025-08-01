@@ -52,16 +52,8 @@ const About = () => {
               </div>
             </div>
             
-            {/* Floating credential badges */}
+            {/* Floating credential badge - top right only */}
             <div className="absolute -top-4 -right-4 bg-primary-600 text-white rounded-2xl p-4 shadow-lg">
-              <div className="text-center">
-                <Users className="h-6 w-6 mx-auto mb-1" />
-                <p className="text-xs font-medium">Licensed</p>
-                <p className="text-xs">Social Worker</p>
-              </div>
-            </div>
-            
-            <div className="absolute -bottom-4 -left-4 bg-lavender-600 text-white rounded-2xl p-4 shadow-lg">
               <div className="text-center">
                 <Heart className="h-6 w-6 mx-auto mb-1" />
                 <p className="text-xs font-medium">Lived</p>
