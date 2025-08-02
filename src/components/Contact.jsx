@@ -1,30 +1,9 @@
-import React, { useState } from 'react'
-import { Mail, Phone, Calendar, Send, MapPin, Clock } from 'lucide-react'
+import React from 'react'
+import { Mail, Phone, Calendar, MapPin, Clock } from 'lucide-react'
 import BookingWidget from './BookingWidget'
+import ContactWidget from './ContactWidget'
 
 const Contact = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    service: '',
-    message: ''
-  })
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    // Handle form submission here
-    console.log('Form submitted:', formData)
-    alert('Thank you for your message! Kim will get back to you within 24-48 hours.')
-  }
-
   return (
     <section id="contact" className="section-padding bg-gray-50">
       <div className="container-max">
@@ -100,104 +79,21 @@ const Contact = () => {
             </div>
           </div>
 
-          {/* Contact Form */}
+          {/* Contact Form Widget */}
           <div className="bg-white rounded-2xl p-8 shadow-sm">
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Send a Message</h3>
             
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="service" className="block text-sm font-medium text-gray-700 mb-2">
-                    Service Interest
-                  </label>
-                  <select
-                    id="service"
-                    name="service"
-                    value={formData.service}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  >
-                    <option value="">Select a service</option>
-                    <option value="life-coaching">Life Coaching</option>
-                    <option value="therapy">Online Therapy</option>
-                    <option value="recovery">Recovery Support</option>
-                    <option value="consultation">Free Consultation</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                  Message *
-                </label>
-                <textarea
-                  id="message"
-                  name="message"
-                  required
-                  rows={5}
-                  value={formData.message}
-                  onChange={handleChange}
-                  placeholder="Tell me a bit about what you're looking for or any questions you have..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                ></textarea>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full btn-primary text-lg justify-center"
-              >
-                <Send className="h-5 w-5" />
-                Send Message
-              </button>
-
-              <p className="text-sm text-gray-600 text-center">
+            <div className="text-center space-y-6">
+              <p className="text-gray-600 leading-relaxed">
+                Use our secure contact form to reach out with any questions or to get started with your healing journey. All information is confidential and secure.
+              </p>
+              
+              <ContactWidget />
+              
+              <p className="text-sm text-gray-600">
                 Your information is confidential and secure. Kim will respond within 24-48 hours.
               </p>
-            </form>
+            </div>
           </div>
         </div>
       </div>
